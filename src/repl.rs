@@ -3,15 +3,60 @@ use std::{
     process::exit,
 };
 
+enum StatementType {
+    Insert,
+    Select,
+}
+
+enum ParserError {
+    PrepareUnrecognizedStatement,
+}
+
+struct Statement {
+    statement_type: StatementType,
+}
+
 pub fn main() {
     loop {
         let text = read_prompt();
         match text.as_str() {
-            ".exit" => exit(0),
-            t => {
-                println!("Unrecognized command: {}", t);
-                exit(1)
+            t if t.starts_with(".") => {
+                parse_meta_command(t);
             }
+            t => match prepare_statement(t) {
+                Ok(_) => {}
+                Err(_) => {}
+            },
+        }
+    }
+}
+
+fn parse_meta_command(command_string: &str) {
+    match command_string {
+        "exit" => exit(0),
+        t => {
+            println!("Unrecognized command: {}", t);
+        }
+    }
+}
+
+fn prepare_statement(statement_string: &str) -> Result<Statement, ParserError> {
+    match statement_string {
+        "select" => {
+            println!("We do a select here");
+            return Ok(Statement {
+                statement_type: StatementType::Select,
+            });
+        }
+        "insert" => {
+            println!("We do a insert here");
+            return Ok(Statement {
+                statement_type: StatementType::Insert,
+            });
+        }
+        t => {
+            println!("Unrecognized keyword at start of: {}", t);
+            return Err(ParserError::PrepareUnrecognizedStatement);
         }
     }
 }
