@@ -1,19 +1,25 @@
+use crate::{
+    constant::{PAGE_SIZE, ROW_SIZE, ROWS_PER_PAGE},
+    statement::prepare_statement,
+    table::Table,
+};
 use std::{
     io::{Write, stdin, stdout},
     process::exit,
 };
 
-enum StatementType {
-    Insert,
-    Select,
-}
+pub fn row_slot(table: &mut Table, row_num: usize) -> &mut [u8] {
+    let page_num = row_num / ROWS_PER_PAGE;
+    let row_offset = row_num % ROWS_PER_PAGE;
+    let byte_offset = row_offset * ROW_SIZE;
 
-enum ParserError {
-    PrepareUnrecognizedStatement,
-}
+    // Get or initialize the page if it doesn't exist
+    if table.pages[page_num].is_none() {
+        table.pages[page_num] = Some(Box::new([0; PAGE_SIZE]));
+    }
 
-struct Statement {
-    statement_type: StatementType,
+    // Return a mutable reference to the row's slot
+    &mut table.pages[page_num].as_mut().unwrap()[byte_offset..byte_offset + ROW_SIZE]
 }
 
 pub fn main() {
@@ -36,27 +42,6 @@ fn parse_meta_command(command_string: &str) {
         "exit" => exit(0),
         t => {
             println!("Unrecognized command: {}", t);
-        }
-    }
-}
-
-fn prepare_statement(statement_string: &str) -> Result<Statement, ParserError> {
-    match statement_string {
-        "select" => {
-            println!("We do a select here");
-            return Ok(Statement {
-                statement_type: StatementType::Select,
-            });
-        }
-        "insert" => {
-            println!("We do a insert here");
-            return Ok(Statement {
-                statement_type: StatementType::Insert,
-            });
-        }
-        t => {
-            println!("Unrecognized keyword at start of: {}", t);
-            return Err(ParserError::PrepareUnrecognizedStatement);
         }
     }
 }
